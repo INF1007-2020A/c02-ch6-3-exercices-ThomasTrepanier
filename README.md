@@ -1,13 +1,5 @@
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod-redirect-0.herokuapp.com/)
 
-
-## Résultats
-Score | Critères
---- | ---
-1/1 | C'était trop long d'écrire des tests cette semaine
-1/1 | **Total**
-
-[Voir détails](./logs/tests_results.txt) | [Rafraîchir](../../)
 # Vérifications de balises de style HTML (chapitre 6.3)
 
 Avant de commencer. Consulter les instructions à suivre dans [instructions.md](instructions.md)
