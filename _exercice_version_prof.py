@@ -2,125 +2,160 @@
 # -*- coding: utf-8 -*-
 
 
-import math
-import copy
-import itertools
+def check_brackets(text, brackets):
+	# TODO: Associer les ouvrantes et fermantes (à l'aide d'un dict)
+	opening_brackets = dict(zip(brackets[0::2], brackets[1::2])) # Ouvrants à fermants
+	closing_brackets = dict(zip(brackets[1::2], brackets[0::2])) # Fermants à ouvrants
 
+	# TODO: Vérifier les ouvertures/fermetures
+	bracket_stack = []
+	# Pour chaque char de la string
+	for chr in text:
+		# Si ouvrant:
+		if chr in opening_brackets:
+			# On empile
+			bracket_stack.append(chr)
+		# Si fermant
+		elif chr in closing_brackets:
+			# Si la pile est vide ou on n'a pas l'ouvrant associé au top de la pile
+			if len(bracket_stack) == 0 or bracket_stack[-1] != closing_brackets[chr]:
+				# Pas bon
+				return False
+			# On dépile
+			bracket_stack.pop()
+	# On vérifie que la pile est vide à la fin (au cas où il y aurait des ouvrants de trop)
+	return len(bracket_stack) == 0
 
-def get_even_keys(dictionary):
-	# Extraire les clés
-	# Extraire les clés paires
-	return {k for k in dictionary.keys() if k % 2 == 0}
+def remove_comments(full_text, comment_start, comment_end):
+	# Cette ligne sert à rien, on ne modifie pas la variable originale de toute façon
+	text = full_text
+	while True:
+		# Trouver le prochain début de commentaire
+		start = text.find(comment_start)
+		# Trouver la prochaine fin de commentaire
+		end = text.find(comment_end)
+		# Si aucun des deux trouvés
+		if start == -1 and end == -1:
+			return text
+		# Si fermeture précède ouverture ou j'en ai un mais pas l'autre
+		if end < start or (start == -1) != (end == -1):
+			# Pas bon
+			return None
+		# Enlever le commentaire de la string
+		text = text[:start] + text[end + len(comment_end):]
 
-def join_dictionaries(dictionaries):
-	return {
-		key: value
-			for d in dictionaries
-				for key, value in d.items()
-	}
+def get_tag_prefix(text, opening_tags, closing_tags):
+	for t in zip(opening_tags, closing_tags):
+		if text.startswith(t[0]):
+			return (t[0], None)
+		elif text.startswith(t[1]):
+			return (None, t[1])
+	return (None, None)
 
-def dictionary_from_lists(keys, values):
-	# Associer les clés et les valeurs.
-	# S'arrêter à la fin de la plus petite des deux listes.
-	#result = {}
-	#for i in range(min(len(keys), len(values))):
-	#	result[keys[i]] = values[i]
-	#return result
-	#return {keys[i]: values[i] for i in range(min(len(keys), len(values)))}
-	return dict(zip(keys, values))
+def check_tags(full_text, tag_names, comment_tags):
+	text = remove_comments(full_text, *comment_tags)
+	if text is None:
+		return False
 
-def get_greatest_values(dictionary, num_values):
-	# Extraire les valeurs
-	#vals = list(dictionary.values())
-	# Ordonner les valeurs
-	#vals = sorted(vals, reverse=True)
-	# Choisir les num_values plus grands
-	return sorted(dictionary.values(), reverse=True)[0:num_values]
+	# On construit nos balises à la HTML ("head" donne "<head>" et "</head>")
+	otags = {f"<{name}>": f"</{name}>" for name in tag_names}
+	ctags = dict((v, k) for k, v in otags.items())
 
-def get_sum_values_from_key(dictionaries, key):
-	# Extraire les valeurs associés à une clé
-	# Faire la somme des valeurs
-	#values = []
-	#for d in dictionaries:
-	#	if key in d:
-	#		values.append(d[key])
-	return sum([d[key] for d in dictionaries if key in d])
-
+	# Même algo qu'au numéro 1, mais adapté aux balises de plusieurs caractères
+	tag_stack = []
+	while len(text) != 0:
+		tag = get_tag_prefix(text, otags.keys(), ctags.keys())
+		# Si ouvrant:
+		if tag[0] is not None:
+			# On empile et on avance
+			tag_stack.append(tag[0])
+			text = text[len(tag[0]):]
+		# Si fermant:
+		elif tag[1] is not None:
+			# Si pile vide OU match pas le haut de la pile:
+			if len(tag_stack) == 0 or tag_stack[-1] != ctags[tag[1]]:
+				# Pas bon
+				return False
+			# On dépile et on avance
+			tag_stack.pop()
+			text = text[len(tag[1]):]
+		# Sinon:
+		else:
+			# On avance jusqu'à la prochaine balise.
+			text = text[1:]
+	# On vérifie que la pile est vide à la fin (au cas où il y aurait des balises ouvrantes de trop)
+	return len(tag_stack) == 0
 
 if __name__ == "__main__":
-	yeet = {
-		69: "Yeet",
-		420: "YeEt",
-		9000: "YEET",
-	}
-	print(get_even_keys(yeet))
+	brackets = ("(", ")", "{", "}", "[", "]")
+	yeet = "(yeet){yeet}"
+	yeeet = "({yeet})"
+	yeeeet = "({yeet)}"
+	yeeeeet = "(yeet"
+	print(check_brackets(yeet, brackets))
+	print(check_brackets(yeeet, brackets))
+	print(check_brackets(yeeeet, brackets))
+	print(check_brackets(yeeeeet, brackets))
 	print()
 
-	yeet = {
-		69: "Yeet",
-		420: "YeEt",
-		9000: "YEET",
-	}
-	doot = {
-		0xBEEF: "doot",
-		0xDEAD: "DOOT",
-		0xBABE: "dOoT"
-	}
-	print(join_dictionaries([yeet, doot]))
-	print()
-	
-	doh = [
-		"D'OH!",
-		"d'oh",
-		"DOH!"
-	]
-	nice = [
-		"NICE!",
-		"nice",
-		"nIcE",
-		"NAIIIIICE!"
-	]
-	print(dictionary_from_lists(doh, nice))
-	print()
-	
-	nums = {
-		"nice": 69,
-		"nice bro": 69420,
-		"AGH!": 9000,
-		"dude": 420,
-		"git gud": 1337
-	}
-	print(get_greatest_values(nums, 1))
-	print(get_greatest_values(nums, 3))
+	spam = "Hello, world!"
+	eggs = "Hello, /* OOGAH BOOGAH world!"
+	parrot = "Hello, OOGAH BOOGAH*/ world!"
+	print(remove_comments(spam, "/*", "*/"))
+	print(remove_comments(eggs, "/*", "*/"))
+	print(remove_comments(parrot, "/*", "*/"))
 	print()
 
-	bro1 = {
-		"money": 12,
-		"problems": 14,
-		"trivago": 1
-	}
-	bro2 = {
-		"money": 56,
-		"problems": 406
-	}
-	bro3 = {
-		"money": 1,
-		"chichis": 1,
-		"power-level": 9000
-	}
-	print(get_sum_values_from_key([bro1, bro2, bro3], "problems"))
-	print(get_sum_values_from_key([bro1, bro2, bro3], "money"))
+	otags = ("<head>", "<body>", "<h1>")
+	ctags = ("</head>", "</body>", "</h1>")
+	print(get_tag_prefix("<body><h1>Hello!</h1></body>", otags, ctags))
+	print(get_tag_prefix("<h1>Hello!</h1></body>", otags, ctags))
+	print(get_tag_prefix("Hello!</h1></body>", otags, ctags))
+	print(get_tag_prefix("</h1></body>", otags, ctags))
+	print(get_tag_prefix("</body>", otags, ctags))
 	print()
 
-	print("-" * 40)
+	spam = (
+		"<html>"
+		"  <head>"
+		"    <title>"
+		"      <!-- Ici j'ai écrit qqch -->"
+		"      Example"
+		"    </title>"
+		"  </head>"
+		"  <body>"
+		"    <h1>Hello, world</h1>"
+		"    <!-- Les tags vides sont ignorés -->"
+		"    <br>"
+		"    <h1/>"
+		"  </body>"
+		"</html>"
+	)
+	eggs = (
+		"<html>"
+		"  <head>"
+		"    <title>"
+		"      <!-- Ici j'ai écrit qqch -->"
+		"      Example"
+		"    <!-- Il manque un end tag"
+		"    </title>-->"
+		"  </head>"
+		"</html>"
+	)
+	parrot = (
+		"<html>"
+		"  <head>"
+		"    <title>"
+		"      Commentaire mal formé -->"
+		"      Example"
+		"    </title>"
+		"  </head>"
+		"</html>"
+	)
+	tags = ("html", "head", "title", "body", "h1")
+	comment_tags = ("<!--", "-->")
+	print(check_tags(spam, tags, comment_tags))
+	print(check_tags(eggs, tags, comment_tags))
+	print(check_tags(parrot, tags, comment_tags))
 	print()
-	a = ("John", "Charles", "Mike")
-	b = ["Jenny", "Christy", "Monica"]
-	c = {"Mélissa", "Véronique", "Julie"}
-	for ai, bi, ci in zip(a, b, c):
-		print(f"{ai}, {bi}, {ci}")
-	#for z in zip(a, b, c):
-	#	for elem in z:
-	#		print(f"{elem} ", end="")
-	#	print()
 
